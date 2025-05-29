@@ -1,6 +1,17 @@
 package com.eventsapp.backend.model.enums;
 
-public enum DrinkType
-{
-    NONALCH, ALCH
+/**
+ * Enum representing types of drinks.
+ */
+public enum DrinkType {
+
+    /**
+     * Non-alcoholic drink.
+     */
+    NONALCH,
+
+    /**
+     * Alcoholic drink.
+     */
+    ALCH
 }

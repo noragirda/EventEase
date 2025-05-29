@@ -2,7 +2,6 @@ package com.eventsapp.backend.config;
 
 import com.eventsapp.backend.service.impl.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,7 +12,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,14 +22,34 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Main security configuration class for the Spring Boot application.
+ * Configures JWT filter, authentication provider, password encoder,
+ * CORS policy, and HTTP security rules.
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    /**
+     * Filter responsible for extracting and validating JWT tokens.
+     */
     private final JwtAuthFilter jwtAuthFilter;
+
+    /**
+     * Custom service to load user details from the database.
+     */
     private final CustomUserDetailsService customUserDetailsService;
 
+    /**
+     * Configures HTTP security, disables CSRF, applies CORS, sets session to stateless,
+     * and secures endpoints using JWT authentication.
+     *
+     * @param http the HTTP security object to configure
+     * @return the configured {@link SecurityFilterChain}
+     * @throws Exception if configuration fails
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -49,7 +67,11 @@ public class SecurityConfig {
         return http.build();
     }
 
-
+    /**
+     * Configures the CORS policy to allow requests from the React frontend (localhost:3000).
+     *
+     * @return the {@link CorsConfigurationSource} with allowed origins, methods, and headers
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -62,6 +84,12 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
+    /**
+     * Defines the authentication provider using a DAO-based user details service and password encoder.
+     *
+     * @return the configured {@link AuthenticationProvider}
+     */
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -70,12 +98,23 @@ public class SecurityConfig {
         return authProvider;
     }
 
-
+    /**
+     * Defines the password encoder to use BCrypt for hashing passwords.
+     *
+     * @return the {@link PasswordEncoder} instance
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Exposes the authentication manager bean required by Spring Security.
+     *
+     * @param config the authentication configuration
+     * @return the {@link AuthenticationManager}
+     * @throws Exception if the authentication manager cannot be created
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {

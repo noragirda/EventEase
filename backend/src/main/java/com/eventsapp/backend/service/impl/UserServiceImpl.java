@@ -12,12 +12,20 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for managing users.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
+    /**
+     * Retrieves all users and maps them to {@link UserResponse} DTOs.
+     *
+     * @return a list of user responses representing all users
+     */
     @Override
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll()
@@ -26,6 +34,12 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Deletes a user by their ID.
+     *
+     * @param userId the ID of the user to delete
+     * @throws NotFoundException if the user with the given ID does not exist
+     */
     @Override
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)

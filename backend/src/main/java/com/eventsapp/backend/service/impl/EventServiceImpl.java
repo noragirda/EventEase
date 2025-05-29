@@ -4,17 +4,20 @@ import com.eventsapp.backend.dto.*;
 import com.eventsapp.backend.model.*;
 import com.eventsapp.backend.model.enums.NapkinsColors;
 import com.eventsapp.backend.repository.*;
-import com.eventsapp.backend.service.impl.EventService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+/**
+ * Implementation of the {@link EventService} interface.
+ * Provides business logic for managing events, including updating events, assigning custom menus and miscellaneous,
+ * updating prices, and retrieving detailed event information.
+ */
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
@@ -29,6 +32,14 @@ public class EventServiceImpl implements EventService {
     private final SoupRepository soupRepository;
     private final MainCourseRepository mainCourseRepository;
 
+    /**
+     * Updates event details for a client, validating ownership and ensuring the event is not too close.
+     *
+     * @param id          the event ID to update
+     * @param clientEmail the email of the client requesting update
+     * @param request     the event update request data
+     * @throws RuntimeException if the user is not found, not a client, unauthorized, or event is too close
+     */
     @Override
     public void updateClientEvent(Long id, String clientEmail, EventUpdateRequest request) {
         User user = userRepository.findByEmail(clientEmail)
@@ -42,24 +53,18 @@ public class EventServiceImpl implements EventService {
         long daysUntilEvent = ChronoUnit.DAYS.between(LocalDate.now(), event.getEventDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         if (daysUntilEvent <= 10) throw new RuntimeException("Event too close to update.");
 
-        // Update basic fields
+        // Update fields
         event.setEventType(request.getEventType());
         event.setFinalAdultCount(request.getFinalAdultCount());
         event.setVegetarians(request.getVegetarians());
         event.setVegans(request.getVegans());
         event.setStartingTime(request.getStartingTime());
 
-        // Update menu
         if (request.getMenuId() != null) {
             Menu menu = menuRepository.findById(request.getMenuId())
                     .orElseThrow(() -> new RuntimeException("Menu not found"));
             event.setMenu(menu);
         }
-        if (request.getStartingTime() != null) {
-            event.setStartingTime(request.getStartingTime());
-        }
-
-
 
         // Update drinks
         event.getDrinks().clear();
@@ -75,7 +80,7 @@ public class EventServiceImpl implements EventService {
             event.setFruits(fruits);
         }
 
-        // Update misc
+        // Update miscellaneous
         if (request.getMiscellaneousId() != null) {
             Miscellaneous misc = miscellaneousRepository.findById(request.getMiscellaneousId())
                     .orElseThrow(() -> new RuntimeException("Misc option not found"));
@@ -84,6 +89,14 @@ public class EventServiceImpl implements EventService {
 
         eventRepository.save(event);
     }
+
+    /**
+     * Assigns a custom menu to an event.
+     *
+     * @param eventId the event ID
+     * @param request the custom menu creation request
+     * @throws RuntimeException if event or menu components are not found
+     */
     @Override
     @Transactional
     public void assignCustomMenu(Long eventId, CreateMenuRequest request) {
@@ -100,13 +113,19 @@ public class EventServiceImpl implements EventService {
         menu.setSoups(soups);
         menu.setMainCourse(mainCourse);
 
-        menu = menuRepository.save(menu);  // ✅ this creates the new Menu in DB
+        menu = menuRepository.save(menu);
 
-        event.setMenu(menu);               // ✅ this links it to the Event
-        eventRepository.save(event);      // ✅ save the event with the new menu
+        event.setMenu(menu);
+        eventRepository.save(event);
     }
 
-
+    /**
+     * Assigns custom miscellaneous options to an event.
+     *
+     * @param eventId the event ID
+     * @param request the miscellaneous creation request
+     * @throws RuntimeException if event not found
+     */
     @Override
     public void assignCustomMisc(Long eventId, CreateMiscRequest request) {
         Event event = eventRepository.findById(eventId)
@@ -125,6 +144,13 @@ public class EventServiceImpl implements EventService {
         event.setMiscellaneous(misc);
         eventRepository.save(event);
     }
+
+    /**
+     * Assigns miscellaneous options to an event.
+     *
+     * @param eventId the event ID
+     * @param request the miscellaneous request data
+     */
     @Override
     @Transactional
     public void assignMiscellaneousToEvent(Long eventId, MiscellaneousRequest request) {
@@ -144,6 +170,13 @@ public class EventServiceImpl implements EventService {
         event.setMiscellaneous(misc);
         eventRepository.save(event);
     }
+
+    /**
+     * Updates miscellaneous details for an event.
+     *
+     * @param eventId the event ID
+     * @param request the miscellaneous update request
+     */
     @Override
     @Transactional
     public void updateMiscellaneous(Long eventId, MiscellaneousRequest request) {
@@ -168,6 +201,14 @@ public class EventServiceImpl implements EventService {
         event.setMiscellaneous(misc);
         eventRepository.save(event);
     }
+
+    /**
+     * Retrieves venues and their events managed by an admin identified by email.
+     *
+     * @param email the admin's email
+     * @return list of venues with events for that admin
+     * @throws RuntimeException if admin not found
+     */
     @Override
     public List<VenueWithEventsResponse> getVenuesWithEventsByAdminEmail(String email) {
         Admin admin = (Admin) userRepository.findByEmail(email)
@@ -193,6 +234,13 @@ public class EventServiceImpl implements EventService {
             return dto;
         }).toList();
     }
+
+    /**
+     * Updates price per adult and per child for an event.
+     *
+     * @param eventId the event ID
+     * @param request the price update request containing new prices
+     */
     @Override
     public void updateEventPrices(Long eventId, AdminEventPriceUpdateRequest request) {
         Event event = eventRepository.findById(eventId)
@@ -203,6 +251,13 @@ public class EventServiceImpl implements EventService {
 
         eventRepository.save(event);
     }
+
+    /**
+     * Retrieves full details of an event including menu, miscellaneous, drinks, and fruits.
+     *
+     * @param eventId the event ID
+     * @return full event details response DTO
+     */
     @Override
     public FullEventDetailsResponse getFullEventDetails(Long eventId) {
         Event event = eventRepository.findById(eventId)
@@ -219,14 +274,14 @@ public class EventServiceImpl implements EventService {
         dto.setVegetarians(event.getVegetarians());
         dto.setVegans(event.getVegans());
 
-        // Menu
+        // Populate menu details
         if (event.getMenu() != null) {
             dto.setApetizers(event.getMenu().getApetizers().stream().map(a -> a.getName()).toList());
             dto.setSoups(event.getMenu().getSoups().stream().map(s -> s.getName()).toList());
             dto.setMainCourse(event.getMenu().getMainCourse() != null ? event.getMenu().getMainCourse().getName() : null);
         }
 
-        // Miscellaneous
+        // Populate miscellaneous details
         if (event.getMiscellaneous() != null) {
             dto.setNapkinsColor(event.getMiscellaneous().getNapkinsColors());
             dto.setFlowerDecoration(event.getMiscellaneous().isFlowerDecoration());
@@ -237,15 +292,10 @@ public class EventServiceImpl implements EventService {
             dto.setCandyProvider(event.getMiscellaneous().getCandyProvider());
         }
 
+        // Populate drinks and fruits
         dto.setDrinks(event.getDrinks().stream().map(Drink::getName).toList());
         dto.setFruits(event.getFruits().stream().map(Fruits::getName).toList());
 
         return dto;
     }
-
-
-
-
-
-
 }

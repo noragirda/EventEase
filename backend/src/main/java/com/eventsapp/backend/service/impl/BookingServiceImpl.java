@@ -8,7 +8,6 @@ import com.eventsapp.backend.repository.BookingRepository;
 import com.eventsapp.backend.repository.EventRepository;
 import com.eventsapp.backend.repository.UserRepository;
 import com.eventsapp.backend.repository.VenueRepository;
-import com.eventsapp.backend.service.impl.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +16,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+/**
+ * Service implementation for managing bookings.
+ * Handles creation, approval, payment marking, and rejection of bookings.
+ */
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
@@ -27,17 +30,21 @@ public class BookingServiceImpl implements BookingService {
     private final EventRepository eventRepository;
     private final EmailService emailService;
 
+    /**
+     * Creates a new booking for a client identified by email.
+     * Verifies client existence and venue availability.
+     *
+     * @param request     booking request details
+     * @param clientEmail email of the client making the booking
+     */
     @Override
     public void createBooking(BookingRequest request, String clientEmail) {
-        // Fetch user by email
         User user = userRepository.findByEmail(clientEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Check if user is a client
         if (!(user instanceof Client)) {
             throw new RuntimeException("Only clients can create bookings.");
         }
-
         Client client = (Client) user;
 
         Venue venue = venueRepository.findById(request.getVenueId())
@@ -55,6 +62,13 @@ public class BookingServiceImpl implements BookingService {
 
         bookingRepository.save(booking);
     }
+
+    /**
+     * Approves a booking if it is paid and awaiting approval.
+     * Updates booking status, sends notification email, and creates an event.
+     *
+     * @param bookingId ID of the booking to approve
+     */
     @Override
     public void approveBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -95,9 +109,14 @@ public class BookingServiceImpl implements BookingService {
         event.setEventType(null);
 
         eventRepository.save(event);
-
-
     }
+
+    /**
+     * Marks a booking as paid if it is not already marked.
+     * Updates booking status to awaiting approval.
+     *
+     * @param bookingId ID of the booking to mark as paid
+     */
     @Override
     public void markBookingAsPaid(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -112,6 +131,13 @@ public class BookingServiceImpl implements BookingService {
 
         bookingRepository.save(booking);
     }
+
+    /**
+     * Rejects a booking by setting its status to REJECTED.
+     *
+     * @param bookingId ID of the booking to reject
+     */
+    @Override
     public void rejectBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -119,6 +145,4 @@ public class BookingServiceImpl implements BookingService {
         booking.setBookingStatus(BookingStatus.REJECTED);
         bookingRepository.save(booking);
     }
-
-
 }

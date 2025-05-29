@@ -16,6 +16,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service responsible for user authentication and registration.
+ * Handles registration of new users and login authentication.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -25,10 +29,17 @@ public class AuthenticationService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authManager;
 
+    /**
+     * Registers a new user (Admin or Client) based on the provided request.
+     * Encodes the password and generates a JWT token upon successful registration.
+     *
+     * @param request the registration request containing user details
+     * @return an {@link AuthResponse} containing the JWT token
+     */
     public AuthResponse register(RegisterRequest request) {
         User user;
         if (request.getRole().equals(Role.ADMIN)) {
-            user = new Admin(); // make sure you define this constructor correctly
+            user = new Admin(); // Ensure Admin class has appropriate constructor
         } else {
             user = new Client();
         }
@@ -42,6 +53,14 @@ public class AuthenticationService {
         return new AuthResponse(token);
     }
 
+    /**
+     * Authenticates a user by verifying credentials.
+     * Generates a JWT token upon successful authentication.
+     *
+     * @param request the login request containing email and password
+     * @return an {@link AuthResponse} containing the JWT token
+     * @throws UsernameNotFoundException if user with given email does not exist
+     */
     public AuthResponse login(LoginRequest request) {
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(

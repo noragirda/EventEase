@@ -27,6 +27,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for managing venues, including creation, update, admin assignment,
+ * image handling, and retrieval of venues with booking details.
+ */
 @Service
 @RequiredArgsConstructor
 public class VenueServiceImpl implements VenueService {
@@ -36,6 +40,11 @@ public class VenueServiceImpl implements VenueService {
     private final BookingRepository bookingRepository;
     private final String uploadDir = "uploads/";
 
+    /**
+     * Retrieves all venues.
+     *
+     * @return a list of all venues as VenueResponse DTOs
+     */
     @Override
     public List<VenueResponse> getAllVenues() {
         return venueRepository.findAll().stream()
@@ -43,6 +52,13 @@ public class VenueServiceImpl implements VenueService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Creates a new venue with optional image upload.
+     *
+     * @param request the venue creation request data
+     * @param image   optional image file for the venue
+     * @return the created venue as a VenueResponse DTO
+     */
     @Override
     public VenueResponse createVenue(VenueRequest request, MultipartFile image) {
         Venue venue = new Venue();
@@ -50,6 +66,15 @@ public class VenueServiceImpl implements VenueService {
         return VenueMapper.toDto(venueRepository.save(venue));
     }
 
+    /**
+     * Updates an existing venue by ID with optional image upload.
+     *
+     * @param id      the ID of the venue to update
+     * @param request the venue update request data
+     * @param image   optional image file for the venue
+     * @return the updated venue as a VenueResponse DTO
+     * @throws NotFoundException if the venue with the specified ID is not found
+     */
     @Override
     public VenueResponse updateVenue(int id, VenueRequest request, MultipartFile image) {
         Venue venue = venueRepository.findById(id)
@@ -59,6 +84,13 @@ public class VenueServiceImpl implements VenueService {
         return VenueMapper.toDto(venueRepository.save(venue));
     }
 
+    /**
+     * Helper method to fill venue entity fields from request and image.
+     *
+     * @param venue   the venue entity to update
+     * @param request the venue request data
+     * @param image   the optional image file
+     */
     private void fillVenueFields(Venue venue, VenueRequest request, MultipartFile image) {
         venue.setName(request.getName());
         venue.setDescription(request.getDescription());
@@ -71,6 +103,13 @@ public class VenueServiceImpl implements VenueService {
         }
     }
 
+    /**
+     * Saves an uploaded image file to the file system.
+     *
+     * @param file the image file to save
+     * @return the saved filename
+     * @throws RuntimeException if saving the file fails
+     */
     private String saveImage(MultipartFile file) {
         try {
             Files.createDirectories(Paths.get(uploadDir));
@@ -82,6 +121,13 @@ public class VenueServiceImpl implements VenueService {
             throw new RuntimeException("Failed to save image", e);
         }
     }
+
+    /**
+     * Retrieves a list of all admins available for a given venue.
+     *
+     * @param venueId the venue ID
+     * @return list of user responses for available admins
+     */
     @Override
     public List<UserResponse> getAvailableAdminsForVenue(int venueId) {
         return userRepository.findAll().stream()
@@ -90,6 +136,13 @@ public class VenueServiceImpl implements VenueService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Assigns a list of admins to a specific venue.
+     *
+     * @param venueId  the venue ID
+     * @param adminIds the list of admin IDs to assign to the venue
+     * @throws NotFoundException if the venue is not found
+     */
     @Override
     public void assignAdminsToVenue(int venueId, List<Long> adminIds) {
         Venue venue = venueRepository.findById(venueId)
@@ -108,6 +161,12 @@ public class VenueServiceImpl implements VenueService {
 
         userRepository.saveAll(admins);
     }
+
+    /**
+     * Retrieves all venues along with their booked dates.
+     *
+     * @return list of VenueResponseBooking DTOs representing venues with their booked dates
+     */
     @Override
     public List<VenueResponseBooking> getVenuesWithBookedDates() {
         List<Venue> venues = venueRepository.findAll();
@@ -128,6 +187,14 @@ public class VenueServiceImpl implements VenueService {
             );
         }).collect(Collectors.toList());
     }
+
+    /**
+     * Retrieves all venues managed by a given admin email.
+     *
+     * @param adminEmail the admin's email address
+     * @return list of venues managed by the admin as VenueResponse DTOs
+     * @throws RuntimeException if admin is not found
+     */
     @Override
     public List<VenueResponse> getVenuesForAdmin(String adminEmail) {
         Admin admin = userRepository.findByEmail(adminEmail)
@@ -136,13 +203,7 @@ public class VenueServiceImpl implements VenueService {
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
         return admin.getVenues().stream()
-                .map(VenueMapper::toDto)  // ✅ use toDto (matches your VenueMapper)
+                .map(VenueMapper::toDto)
                 .collect(Collectors.toList());
     }
-
-
-
-
-
-
 }
